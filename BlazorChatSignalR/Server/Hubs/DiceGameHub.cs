@@ -15,7 +15,7 @@ namespace BlazorChatSignalR.Server.Hubs
                 return;
             }
             Users.Add(Context.ConnectionId, username);
-            await AddMessageToChat(username, "has joined the party!");
+            //await AddMessageToChat(username, "has joined the party!");
             await base.OnConnectedAsync();
         }
 
@@ -27,12 +27,19 @@ namespace BlazorChatSignalR.Server.Hubs
                 return;
             }
             Users.Remove(Context.ConnectionId);
-            await AddMessageToChat(username, "has left the room!");
+            //await AddMessageToChat(username, "has left the room!");
         }
 
-        public async Task AddMessageToChat(string user, string message)
+        public async Task SendRoll(string user, int roll)
         {
-            await Clients.All.SendAsync("GetThatMessageDude", user, message);
+            await Clients.All.SendAsync("ReceiveRoll", user, roll);
+        }
+
+        public async Task RollTheDice(string user)
+        {
+            Random random = new Random();
+            int diceRoll = random.Next(1, 7);
+            await SendRoll(user, diceRoll);
         }
     }
 }
