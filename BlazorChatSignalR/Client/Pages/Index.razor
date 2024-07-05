@@ -43,7 +43,7 @@ else
     private async Task Connect()
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri($"/chathub?username={username}"))
+            .WithUrl(NavigationManager.ToAbsoluteUri($"/dicegamehub?username={username}"))
             .Build();
 
         hubConnection.On<string, string>("GetThatMessageDude", (user, message) =>
