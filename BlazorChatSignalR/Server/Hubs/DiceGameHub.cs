@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using BlazorChatSignalR.Shared;
+using Microsoft.AspNetCore.SignalR;
 
 namespace BlazorChatSignalR.Server.Hubs
 {
     public class DiceGameHub : Hub
     {
-        private static readonly Dictionary<string, string> Users = new Dictionary<string, string>();
+        private static readonly Dictionary<string, Player> Users = new Dictionary<string, Player>();
 
         public override async Task OnConnectedAsync()
         {
@@ -14,32 +15,47 @@ namespace BlazorChatSignalR.Server.Hubs
                 Context.Abort();
                 return;
             }
-            Users.Add(Context.ConnectionId, username);
-            //await AddMessageToChat(username, "has joined the party!");
+            Users.Add(Context.ConnectionId, new Player(username));
+            await SendPlayers();
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            string username = Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value;
+            string username = Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value.Name;
             if (string.IsNullOrEmpty(username))
             {
                 return;
             }
             Users.Remove(Context.ConnectionId);
-            //await AddMessageToChat(username, "has left the room!");
+            await SendPlayers();
+            await Task.CompletedTask;
         }
 
-        public async Task SendRoll(string user, int roll)
-        {
-            await Clients.All.SendAsync("ReceiveRoll", user, roll);
-        }
-
-        public async Task RollTheDice(string user)
+        public async Task RollTheDice()
         {
             Random random = new Random();
             int diceRoll = random.Next(1, 7);
-            await SendRoll(user, diceRoll);
+            await SetRoll(diceRoll);
+            await SendRoll();
+        }
+
+        private async Task SendRoll()
+        {
+            var players = Users.Values.ToList();
+            await Clients.All.SendAsync("ReceiveRoll", players);
+        }
+
+        private async Task SendPlayers()
+        {
+            var players = Users.Values.ToList();
+            await Clients.All.SendAsync("ReceivePlayers", players);
+        }
+
+        private async Task SetRoll(int roll)
+        {
+            Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value.Roll = roll;
+            await Task.CompletedTask;
         }
     }
 }

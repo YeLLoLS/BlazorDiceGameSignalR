@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using BlazorChatSignalR.Shared
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
@@ -9,7 +10,7 @@
 @if (!IsConnected)
 {
     <div class="input-group">
-        <input @bind="username" class="form-control" placeholder="What's your name?">
+        <input @bind="playerOneName" class="form-control" placeholder="Who dares to...?">
         <button class="btn btn-primary form-control-append" @onclick="Connect">
             Connect
         </button>
@@ -19,13 +20,20 @@ else
 {
     <div class="game-board">
         <div>
-            <h4>@username</h4>
-            <p>@dice</p>
+            <h4>@playerOneName</h4>
+            <p>@dicePlayerOne</p>
         </div>
-        @* <div>
-            <h4>Player 2</h4>
-            <p>@DiceGame.Player2Roll</p>
-        </div> *@
+        <div>
+            @if (!String.IsNullOrEmpty(playerTwoName))
+            {
+                <h4>@playerTwoName</h4>
+                <p>@dicePlayerTwo</p>
+            }
+            else
+            {
+                <p>Player not connected...</p>
+            }
+        </div>
     </div>
     <div class="input-group">
         <button class="btn btn-primary form-group-append"
@@ -34,24 +42,38 @@ else
             Roll the dice
         </button>
     </div>
+    <div>
+        <h4>Players connected:</h4>
+        @foreach (var player in connectedPlayers)
+        {
+            <p>@player.Name</p>
+        }
+    </div>
 }
 
 @code {
     private HubConnection? hubConnection;
-    private string username = string.Empty;
-    private int dice = 0;
-    ElementReference TextAreaRef;
+    private string playerOneName = string.Empty;
+    private int dicePlayerOne = 0;
+    private string playerTwoName = string.Empty;
+    private int dicePlayerTwo = 0;
+    private List<Player> connectedPlayers = new List<Player>();
 
     private async Task Connect()
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri($"/dicegamehub?username={username}"))
+            .WithUrl(NavigationManager.ToAbsoluteUri($"/dicegamehub?username={playerOneName}"))
             .Build();
 
-        hubConnection.On<string, int>("ReceiveRoll", (user, roll) =>
+        hubConnection.On<List<Player>>("ReceiveRoll", async (rollPlayers) =>
         {
-            dice = roll;
-            JSRuntime.InvokeVoidAsync("scrollToBottom", TextAreaRef);
+            await UpdatePlayers(rollPlayers);
+            StateHasChanged();
+        });
+
+        hubConnection.On<List<Player>>("ReceivePlayers", async (connectedPlayers) =>
+        {
+            await UpdatePlayers(connectedPlayers);
             StateHasChanged();
         });
 
@@ -62,8 +84,26 @@ else
     {
         if (hubConnection != null)
         {
-            await hubConnection.SendAsync("RollTheDice", username);
+            await hubConnection.SendAsync("RollTheDice");
         }
+    }
+
+    private async Task UpdatePlayers(List<Player> players)
+    {
+        if(players.Count > 0)
+        {
+            connectedPlayers = players;
+            playerOneName = players.First().Name;
+            dicePlayerOne = players.First().Roll;
+
+            if (players.Count == 2)
+            {
+                playerTwoName = players.Last().Name;
+                dicePlayerTwo = players.Last().Roll;
+            }
+        }
+
+        await Task.CompletedTask;
     }
 
     private async Task HandleInput(KeyboardEventArgs args)
