@@ -17,6 +17,8 @@ namespace BlazorChatSignalR.Server.Hubs
             Users.Add(Context.ConnectionId, username);
             //await AddMessageToChat(username, "has joined the party!");
             await base.OnConnectedAsync();
+
+            await SendPlayers();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -27,6 +29,8 @@ namespace BlazorChatSignalR.Server.Hubs
                 return;
             }
             Users.Remove(Context.ConnectionId);
+
+            await Task.CompletedTask;
             //await AddMessageToChat(username, "has left the room!");
         }
 
@@ -40,6 +44,12 @@ namespace BlazorChatSignalR.Server.Hubs
             Random random = new Random();
             int diceRoll = random.Next(1, 7);
             await SendRoll(user, diceRoll);
+        }
+
+        private async Task SendPlayers()
+        {
+            var players = Users.Values.ToList();
+            await Clients.All.SendAsync("ReceivePlayers", players);
         }
     }
 }

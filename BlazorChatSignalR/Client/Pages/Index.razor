@@ -9,7 +9,7 @@
 @if (!IsConnected)
 {
     <div class="input-group">
-        <input @bind="username" class="form-control" placeholder="What's your name?">
+        <input @bind="username" class="form-control" placeholder="Who dares to...?">
         <button class="btn btn-primary form-control-append" @onclick="Connect">
             Connect
         </button>
@@ -34,13 +34,20 @@ else
             Roll the dice
         </button>
     </div>
+    <div>
+        <h4>Players:</h4>
+        @foreach (var player in players)
+        {
+            <p>@player</p>
+        }
+    </div>
 }
 
 @code {
     private HubConnection? hubConnection;
     private string username = string.Empty;
     private int dice = 0;
-    ElementReference TextAreaRef;
+    private List<string> players = new List<string>();
 
     private async Task Connect()
     {
@@ -51,7 +58,12 @@ else
         hubConnection.On<string, int>("ReceiveRoll", (user, roll) =>
         {
             dice = roll;
-            JSRuntime.InvokeVoidAsync("scrollToBottom", TextAreaRef);
+            StateHasChanged();
+        });
+
+        hubConnection.On<List<string>>("ReceivePlayers", (connectedPlayers) =>
+        {
+            players = connectedPlayers;
             StateHasChanged();
         });
 
