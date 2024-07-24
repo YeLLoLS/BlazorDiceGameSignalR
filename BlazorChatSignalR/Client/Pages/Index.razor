@@ -24,6 +24,18 @@ else
             <p>@dicePlayerOne</p>
         </div>
         <div>
+            @if(!String.IsNullOrEmpty(winnerName))
+            {
+                <h4>Winner:</h4>
+                <h4>@winnerName</h4>
+                <p>@diceWinner</p>
+            }
+            else
+            {
+                <h4>VS</h4>
+            }
+        </div>
+        <div>
             @if (!String.IsNullOrEmpty(playerTwoName))
             {
                 <h4>@playerTwoName</h4>
@@ -57,8 +69,9 @@ else
     private int dicePlayerOne = 0;
     private string playerTwoName = string.Empty;
     private int dicePlayerTwo = 0;
+    private string winnerName = string.Empty;
+    private int diceWinner = 0;
     private List<Player> connectedPlayers = new List<Player>();
-
     private async Task Connect()
     {
         hubConnection = new HubConnectionBuilder()
@@ -74,6 +87,19 @@ else
         hubConnection.On<List<Player>>("ReceivePlayers", async (connectedPlayers) =>
         {
             await UpdatePlayers(connectedPlayers);
+            StateHasChanged();
+        });
+
+        hubConnection.On<Player>("ReceiveWinner", (winner) =>
+        {
+            winnerName = winner.Name;
+            diceWinner = winner.Roll;
+            StateHasChanged();
+        });
+
+        hubConnection.On<List<Player>>("ReceiveRollsReset", async (players) =>
+        {
+            await UpdatePlayers(players);
             StateHasChanged();
         });
 

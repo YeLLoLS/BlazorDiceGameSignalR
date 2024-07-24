@@ -44,6 +44,7 @@ namespace BlazorChatSignalR.Server.Hubs
         {
             var players = Users.Values.ToList();
             await Clients.All.SendAsync("ReceiveRoll", players);
+            await DecideWinner();
         }
 
         private async Task SendPlayers()
@@ -55,6 +56,39 @@ namespace BlazorChatSignalR.Server.Hubs
         private async Task SetRoll(int roll)
         {
             Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value.Roll = roll;
+            await Task.CompletedTask;
+        }
+
+        private async Task DecideWinner()
+        {
+            if(Users.Count < 2)
+            {
+                return;
+            }
+
+            if(Users.Values.All(p => p.Roll == 0))
+            {
+                return;
+            }
+
+            if(Users.Values.All(p => p.Roll > 0))
+            {
+                var players = Users.Values.ToList();
+                var winner = players.OrderByDescending(p => p.Roll).First();
+                await Clients.All.SendAsync("ReceiveWinner", winner);
+                await ResetRolls();
+            }
+        }
+
+        private async Task ResetRolls()
+        {
+            foreach(var user in Users)
+            {
+                user.Value.Roll = 0;
+            }
+
+            var players = Users.Values.ToList();
+            await Clients.All.SendAsync("ReceiveRollsReset", players);
             await Task.CompletedTask;
         }
     }
