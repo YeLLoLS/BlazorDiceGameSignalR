@@ -34,6 +34,11 @@ namespace BlazorChatSignalR.Server.Hubs
 
         public async Task RollTheDice()
         {
+            if(Users.Count != 2)
+            {
+                return;
+            }
+
             var playerRoll = Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value.Roll;
             if(playerRoll != 0)
             {
