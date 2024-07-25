@@ -34,6 +34,12 @@ namespace BlazorChatSignalR.Server.Hubs
 
         public async Task RollTheDice()
         {
+            var playerRoll = Users.FirstOrDefault(u => u.Key == Context.ConnectionId).Value.Roll;
+            if(playerRoll != 0)
+            {
+                return;
+            }
+
             Random random = new Random();
             int diceRoll = random.Next(1, 7);
             await SetRoll(diceRoll);
@@ -41,9 +47,10 @@ namespace BlazorChatSignalR.Server.Hubs
         }
 
         private async Task SendRoll()
-        {
+        { 
             var players = Users.Values.ToList();
             await Clients.All.SendAsync("ReceiveRoll", players);
+            await Clients.Client(Context.ConnectionId).SendAsync("ReceiveButtonStatus", false);
             await DecideWinner();
         }
 
@@ -74,9 +81,19 @@ namespace BlazorChatSignalR.Server.Hubs
             if(Users.Values.All(p => p.Roll > 0))
             {
                 var players = Users.Values.ToList();
-                var winner = players.OrderByDescending(p => p.Roll).First();
-                await Clients.All.SendAsync("ReceiveWinner", winner);
-                await ResetRolls();
+                if(players.All(p => p.Roll == players.First().Roll && p.Roll > 0))
+                {
+                    await Clients.All.SendAsync("ReceiveDraw", "It's a draw");
+                    await Clients.All.SendAsync("ReceiveButtonStatus", true);
+                    await ResetRolls();
+                }
+                else
+                {
+                    var winner = players.OrderByDescending(p => p.Roll).First();
+                    await Clients.All.SendAsync("ReceiveWinner", $"{winner.Name} won the game with a roll of {winner.Roll}.");
+                    await Clients.All.SendAsync("ReceiveButtonStatus", true);
+                    await ResetRolls();
+                }
             }
         }
 
