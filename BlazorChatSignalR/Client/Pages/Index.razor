@@ -24,11 +24,9 @@ else
             <p>@dicePlayerOne</p>
         </div>
         <div>
-            @if(!String.IsNullOrEmpty(winnerName))
+            @if(!String.IsNullOrEmpty(winnerMessage))
             {
-                <h4>Winner:</h4>
-                <h4>@winnerName</h4>
-                <p>@diceWinner</p>
+                <h4>@winnerMessage</h4>
             }
             else
             {
@@ -47,13 +45,16 @@ else
             }
         </div>
     </div>
-    <div class="input-group">
-        <button class="btn btn-primary form-group-append"
-            @onclick="RollTheDice"
-            disabled="@(!IsConnected)">
-            Roll the dice
-        </button>
-    </div>
+    @if(rollButtonStatus)
+    {
+        <div class="input-group">
+            <button class="btn btn-primary form-group-append"
+                    @onclick="RollTheDice"
+                    disabled="@(!IsConnected)">
+                Roll the dice
+            </button>
+        </div>
+    }
     <div>
         <h4>Players connected:</h4>
         @foreach (var player in connectedPlayers)
@@ -69,8 +70,8 @@ else
     private int dicePlayerOne = 0;
     private string playerTwoName = string.Empty;
     private int dicePlayerTwo = 0;
-    private string winnerName = string.Empty;
-    private int diceWinner = 0;
+    private string winnerMessage = string.Empty;
+    private bool rollButtonStatus = true;
     private List<Player> connectedPlayers = new List<Player>();
     private async Task Connect()
     {
@@ -90,16 +91,27 @@ else
             StateHasChanged();
         });
 
-        hubConnection.On<Player>("ReceiveWinner", (winner) =>
+        hubConnection.On<string>("ReceiveWinner", (winner) =>
         {
-            winnerName = winner.Name;
-            diceWinner = winner.Roll;
+            winnerMessage = winner;
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("ReceiveDraw", (drawMessage) =>
+        {
+            winnerMessage = drawMessage;
             StateHasChanged();
         });
 
         hubConnection.On<List<Player>>("ReceiveRollsReset", async (players) =>
         {
             await UpdatePlayers(players);
+            StateHasChanged();
+        });
+
+        hubConnection.On<bool>("ReceiveButtonStatus", (buttonStatus) =>
+        {
+            rollButtonStatus = buttonStatus;
             StateHasChanged();
         });
 
