@@ -9,7 +9,7 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
   WORKING_DIRECTORY: BlazorChatSignalR\Client
-  PUBLISH_PROFILE: DiceGame - Web Deploy
+  PUBLISH_PROFILE: dicegame-gbb9hngjgvgzeuff.scm.polandcentral-01.azurewebsites.net:443
 jobs:
   build:
     runs-on: windows-latest
