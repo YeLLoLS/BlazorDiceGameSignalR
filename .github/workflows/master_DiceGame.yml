@@ -9,6 +9,8 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
   WORKING_DIRECTORY: BlazorChatSignalR\Client
+  CLIENT_DIRECTORY: BlazorChatSignalR\Client
+  SERVER_DIRECTORY: BlazorChatSignalR\Server
 jobs:
   build:
     runs-on: windows-latest
@@ -18,14 +20,20 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
-    - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Restore Client
+      run: dotnet restore "${{ env.CLIENT_DIRECTORY }}"
+    - name: Restore Client
+      run: dotnet restore "${{ env.SERVER_DIRECTORY }}"
+    - name: Build Client
+      run: dotnet build "${{ env.CLIENT_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build Server
+      run: dotnet build "${{ env.SERVER_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Test
       run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
-    - name: Publish
-      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+    - name: Publish Client
+      run: dotnet publish "${{ env.CLIENT_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+    - name: Publish Server
+      run: dotnet publish "${{ env.SERVER_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v3
       with:
